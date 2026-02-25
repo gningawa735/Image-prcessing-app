@@ -1,0 +1,33 @@
+image: registry.u-bordeaux.fr/pdl/jdk-mvn-node:latest
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  TESTCONTAINERS_HOST_OVERRIDE: "host.docker.internal"
+
+cache:
+  paths:
+    - .m2/repository/
+    - frontend/node_modules/
+
+build_job:
+  stage: build
+  script:
+    - mvn $MAVEN_CLI_OPTS compile
+  artifacts:
+    expire_in: 10 min
+    paths: 
+      - target/
+      - "*/target"
+  tags:
+      - Docker
+      - Quirrel
+
+test_job:
+  stage: test
+  script:
+    - find . -name "*.class" -exec touch {} \+
+    - mvn $MAVEN_CLI_OPTS test
+  tags:
+      - Docker
+      - Quirrel
