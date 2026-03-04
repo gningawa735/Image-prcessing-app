@@ -15,4 +15,6 @@ public interface Dao<T> {
   void update(final T t, final String[] params);
 
   void delete(final T t);
+
+  
 }
