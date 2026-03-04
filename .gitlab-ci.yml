@@ -13,6 +13,7 @@ cache:
 build_job:
   stage: build
   script:
+    -cd backend
     - mvn $MAVEN_CLI_OPTS compile
   artifacts:
     expire_in: 10 min
