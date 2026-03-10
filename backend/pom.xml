@@ -46,6 +46,16 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+        <groupId>org.boofcv</groupId>
+        <artifactId>boofcv-core</artifactId>
+        <version>0.43.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.boofcv</groupId>
+        <artifactId>boofcv-swing</artifactId>
+        <version>0.43.1</version>
+    </dependency>
 	</dependencies>
 
 	<build>

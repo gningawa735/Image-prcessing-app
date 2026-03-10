@@ -9,6 +9,8 @@ public class Image {
   private String name;
   private byte[] data;
   private Set<String> keywords;
+  private int descriptorType; 
+  private float[] descriptor;  
 
   public Image(final String name, final byte[] data) {
     id = count++;
@@ -38,4 +40,12 @@ public class Image {
   public void addKeyword(String tag) {
     this.keywords.add(tag);
   }
+
+  public int getDescriptorType() { return descriptorType; }
+
+  public void setDescriptorType(int descriptorType) { this.descriptorType = descriptorType; }
+
+  public float[] getDescriptor() { return descriptor; }
+
+  public void setDescriptor(float[] descriptor) { this.descriptor = descriptor; } 
 }
