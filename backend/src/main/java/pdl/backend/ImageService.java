@@ -105,4 +105,18 @@ public void initImagesFromDisk() {
     public List<Image> getImagesList() {
         return imageDao.retrieveAll();
     }
+    private double distance(float[] a, float[] b){
+        if (a == null || b == null) {
+        throw new IllegalArgumentException("Descripteur null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Descripteurs de tailles différentes");
+        }
+        double sum = 0.0;
+        for (int i = 0; i < a.length; i++) {
+            double diff = a[i] - b[i];
+            sum += diff * diff;
+        }
+        return Math.sqrt(sum); 
+    }
 }
