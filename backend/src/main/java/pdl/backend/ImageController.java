@@ -76,5 +76,15 @@ public class ImageController {
       .contentType(MediaType.IMAGE_JPEG)
       .body(image.getData());
   }
+  
+  @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
+  public ResponseEntity<?> deleteImage(@PathVariable long id) {
+    Image image = imageDao.retrieve(id).get();
+    if (image == null)
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    imageDao.delete(image);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
 
 }
