@@ -48,6 +48,8 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         path VARCHAR(255) NOT NULL,
         size BIGINT NOT NULL,
         type VARCHAR(100) NOT NULL,
+        width INT,
+        height INT,
         descriptor1d vector(9),
         descriptor2d vector(32),
         descriptor3d vector(64)
@@ -62,6 +64,10 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       try (FileOutputStream fos = new FileOutputStream(filePath)) {
         fos.write(image.getData());
       }
+      BufferedImage img = ImageIO.read(new ByteArrayInputStream(image.getData()));
+      int width = img.getWidth();
+      int height = img.getHeight();
+
       String d1 = null;
       String d2 = null;
       String d3 = null;
@@ -76,7 +82,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         }
       }
       jdbcTemplate.update(
-        "INSERT INTO images (id, name, path, size, type, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
+        "INSERT INTO images (id, name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
         image.getId(),
         image.getName(),
         filePath,
@@ -145,6 +151,10 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         .stream()
         .filter(img -> img.getKeywords().contains(keyword))
         .toList();
+  }
+
+  public List<Image> findByDimension(int value) {
+    return jdbcTemplate.query( "SELECT * FROM images WHERE width = ? OR height = ?",  imageRowMapper,value, value);
   }
 
 }
