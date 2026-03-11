@@ -9,8 +9,9 @@ public class Image {
   private String name;
   private byte[] data;
   private Set<String> keywords;
-  private int descriptorType; 
-  private float[] descriptor;  
+  private float[] hist1D;
+  private float[] hist2D;
+  private float[] hist3D;
 
   public Image(final String name, final byte[] data) {
     id = count++;
@@ -41,11 +42,11 @@ public class Image {
     this.keywords.add(tag);
   }
 
-  public int getDescriptorType() { return descriptorType; }
+  public void setHist1D(float[] hist) { this.hist1D = hist; }
+  public void setHist2D(float[] hist) { this.hist2D = hist; }
+  public void setHist3D(float[] hist) { this.hist3D = hist; }
 
-  public void setDescriptorType(int descriptorType) { this.descriptorType = descriptorType; }
-
-  public float[] getDescriptor() { return descriptor; }
-
-  public void setDescriptor(float[] descriptor) { this.descriptor = descriptor; } 
+  public float[] getHist1D() { return hist1D; }
+  public float[] getHist2D() { return hist2D; }
+  public float[] getHist3D() { return hist3D; }
 }
