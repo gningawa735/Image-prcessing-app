@@ -49,4 +49,21 @@ public class ImageController {
     return nodes;
   }
 
+  @RequestMapping(value = "/images", method = RequestMethod.POST)
+  public ResponseEntity<?> addImage(@RequestParam MultipartFile file, RedirectAttributes redirectAttributes) {
+    if (file.isEmpty())
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    if (!file.getContentType().equals(MediaType.IMAGE_JPEG_VALUE))
+      return new ResponseEntity<>(HttpStatus.UNSUPPORTED_MEDIA_TYPE); 
+
+    try {
+      Image image = new Image(file.getOriginalFilename(), file.getBytes());
+      imageDao.create(image);
+      return new ResponseEntity<>(HttpStatus.CREATED);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
 }
