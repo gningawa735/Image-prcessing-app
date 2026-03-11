@@ -140,4 +140,11 @@ public class ImageDao implements Dao<Image>, InitializingBean {
      return jdbcTemplate.query( "SELECT * FROM images WHERE type = ?",  imageRowMapper, format);
     }
 
+  public List<Image> findByKeyword(String keyword) {
+    return retrieveAll()
+        .stream()
+        .filter(img -> img.getKeywords().contains(keyword))
+        .toList();
+  }
+
 }
