@@ -131,4 +131,8 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       id, id, limit
     );
   }
+
+    public List<Image> findByName(String name) {
+    return jdbcTemplate.query(  "SELECT * FROM images WHERE name LIKE ?",  imageRowMapper,   "%" + name + "%" );
+    }
 }
