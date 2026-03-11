@@ -66,4 +66,15 @@ public class ImageController {
     }
   }
 
+  @RequestMapping(value = "/images/{id}", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
+  public ResponseEntity<?> getImage(@PathVariable long id) {
+    Image image = imageDao.retrieve(id).get();
+    if (image == null)
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    return ResponseEntity
+      .ok()
+      .contentType(MediaType.IMAGE_JPEG)
+      .body(image.getData());
+  }
+
 }
