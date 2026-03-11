@@ -1,5 +1,6 @@
 package pdl.backend;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+
+import javax.imageio.ImageIO;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,16 +74,15 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       String d1 = null;
       String d2 = null;
       String d3 = null;
-      if (image.getDescriptor() != null) {
-        String vector = java.util.Arrays.toString(image.getDescriptor()).replace(" ", "");
-        if (image.getDescriptorType() == 1) {
-          d1 = vector;
-        } else if (image.getDescriptorType() == 2) {
-          d2 = vector;
-        } else if (image.getDescriptorType() == 3) {
-          d3 = vector;
-        }
-      }
+      if (image.getHist1D() != null){
+        d1 = java.util.Arrays.toString(image.getHist1D()).replace(" ", "");
+
+        if (image.getHist2D() != null)
+        d2 = java.util.Arrays.toString(image.getHist2D()).replace(" ", "");
+
+        if (image.getHist3D() != null)
+        d3 = java.util.Arrays.toString(image.getHist3D()).replace(" ", "");
+    }
       jdbcTemplate.update(
         "INSERT INTO images (id, name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
         image.getId(),
