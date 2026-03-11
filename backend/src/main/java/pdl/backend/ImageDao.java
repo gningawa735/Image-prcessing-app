@@ -82,12 +82,14 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         }
       }
       jdbcTemplate.update(
-        "INSERT INTO images (id, name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
+        "INSERT INTO images (id, name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
         image.getId(),
         image.getName(),
         filePath,
         image.getData().length,
         image.getName().lastIndexOf('.') > 0 ? image.getName().substring(image.getName().lastIndexOf('.') + 1) : "unknown",
+        width,
+        height,
         d1,
         d2,
         d3
