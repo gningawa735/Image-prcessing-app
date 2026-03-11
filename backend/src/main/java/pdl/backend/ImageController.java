@@ -86,5 +86,27 @@ public class ImageController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  @RequestMapping(value = "/images/{id}/similar", method = RequestMethod.GET, produces = "application/json; charset=UTF-8")
+  @ResponseBody
+  public ResponseEntity<?> getSimilarImages( @PathVariable long id, @RequestParam int number, @RequestParam int descriptor) {
+    Optional<Image> imageOpt = imageDao.retrieve(id);
+    if (imageOpt.isEmpty()) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
 
+    if (descriptor != 1 && descriptor != 2 && descriptor != 3) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    List<Image> images = imageDao.similarImages(id, number, descriptor);
+
+    ArrayNode nodes = mapper.createArrayNode();
+    for (Image image : images) {
+      ObjectNode node = mapper.createObjectNode();
+      node.put("id", image.getId());
+      node.put("score", 0);
+      nodes.add(node);
+    }
+    return new ResponseEntity<>(nodes, HttpStatus.OK);
+  }
 }
