@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
-
+import java.util.Map;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -89,25 +89,34 @@ public class ImageController {
 
   @RequestMapping(value = "/images/{id}/similar", method = RequestMethod.GET, produces = "application/json; charset=UTF-8")
   @ResponseBody
-  public ResponseEntity<?> getSimilarImages( @PathVariable long id, @RequestParam int number, @RequestParam int descriptor) {
+  public ResponseEntity<?> getSimilarImages(@PathVariable long id, @RequestParam int number, @RequestParam String descriptor) {
     Optional<Image> imageOpt = imageDao.retrieve(id);
     if (imageOpt.isEmpty()) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
-
-    if (descriptor != 1 && descriptor != 2 && descriptor != 3) {
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    int descriptorType;
+    switch (descriptor) {
+      case "H1D":
+        descriptorType = 1;
+        break;
+      case "H2D":
+        descriptorType = 2;
+        break;
+      case "H3D":
+        descriptorType = 3;
+        break;
+      default:
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
-
-    List<Image> images = imageDao.similarImages(id, number, descriptor);
-
+    List<Map<String, Object>> images = imageDao.similarImages(id, number, descriptorType);  
     ArrayNode nodes = mapper.createArrayNode();
-    for (Image image : images) {
+    for (Map<String, Object> image : images) {
       ObjectNode node = mapper.createObjectNode();
-      node.put("id", image.getId());
-      node.put("score", 0);
+      node.put("id", ((Number) image.get("id")).longValue());
+      node.put("score", ((Number) image.get("score")).doubleValue());
       nodes.add(node);
     }
+
     return new ResponseEntity<>(nodes, HttpStatus.OK);
   }
 }

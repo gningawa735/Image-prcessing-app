@@ -38,9 +38,11 @@ public void initImagesFromDisk() {
             try {
                 byte[] data = Files.readAllBytes(p);
                 String name = p.getFileName().toString();
-                
+                if (imageDao.existsByName(name)) {
+                    System.out.println("[BOOT] SKIP déjà indexée : " + name);
+                    continue;
+                }
                 indexAndSaveImage(name, data);
-                
                 System.out.println("[BOOT] + " + name + " indexée (H1D, H2D, H3D)");
             } catch (Exception e) {
                 System.err.println("[BOOT] SKIP " + p.getFileName() + " : " + e.getMessage());

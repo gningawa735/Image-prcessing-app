@@ -11,7 +11,7 @@ public class DescriptorService {
 
     public float[] compute(BufferedImage img, String type) {
         return switch (type.toUpperCase()) {
-            case "H1D" -> hist1D(img, 18);
+            case "H1D" -> hist1D(img, 9);
             case "H2D" -> hist2D(img, 8, 8);
             case "H3D" -> hist3D(img, 4, 4, 4);
             default -> throw new IllegalArgumentException();

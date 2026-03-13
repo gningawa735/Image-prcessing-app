@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.imageio.ImageIO;
@@ -34,7 +35,9 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
       try {
         byte[] data = Files.readAllBytes(new File(path).toPath());
-        return new Image(name, data, id);
+        Image img = new Image(name, data);
+        img.setId(id);
+        return img;
       } catch (IOException e) {
         throw new RuntimeException("Impossible de lire le fichier : " + path, e);
       }
@@ -47,7 +50,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
     jdbcTemplate.execute("""
       CREATE TABLE IF NOT EXISTS images (
-        id BIGINT PRIMARY KEY,
+        id BIGSERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         path VARCHAR(255) NOT NULL,
         size BIGINT NOT NULL,
@@ -55,7 +58,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         width INT,
         height INT,
         descriptor1d vector(9),
-        descriptor2d vector(32),
+        descriptor2d vector(64),
         descriptor3d vector(64)
       )
       """);
@@ -64,7 +67,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   @Override
   public void create(Image image) {
     try {
-      String filePath = "images/" + image.getId() + "_" + image.getName();
+      String filePath = "images/" + image.getName();
       try (FileOutputStream fos = new FileOutputStream(filePath)) {
         fos.write(image.getData());
       }
@@ -84,11 +87,9 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         if (image.getHist3D() != null)
         d3 = java.util.Arrays.toString(image.getHist3D()).replace(" ", "");
     }
-      jdbcTemplate.update(
-        "INSERT INTO images (id, name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
-        image.getId(),
+      jdbcTemplate.update("INSERT INTO images (name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
         image.getName(),
-        filePath,
+        filePath.toString(),
         image.getData().length,
         image.getName().lastIndexOf('.') > 0 ? image.getName().substring(image.getName().lastIndexOf('.') + 1) : "unknown",
         width,
@@ -96,7 +97,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         d1,
         d2,
         d3
-      );
+    );
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -126,19 +127,20 @@ public class ImageDao implements Dao<Image>, InitializingBean {
     jdbcTemplate.update("DELETE FROM images WHERE id = ?", image.getId());
   }
 
-  public List<Image> similarImages(long id, int limit, int descriptorType) {
+  public List<Map<String, Object>> similarImages(long id, int limit, int descriptorType) {
     String column =
       descriptorType == 1 ? "descriptor1d" :
       descriptorType == 2 ? "descriptor2d" :
       "descriptor3d";
 
-    return jdbcTemplate.query(
-      "SELECT * FROM images " +
+    return jdbcTemplate.queryForList(
+      "SELECT id, " +
+      column + " <-> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
+      "FROM images " +
       "WHERE id <> ? " +
       "AND " + column + " IS NOT NULL " +
-      "ORDER BY " + column + " <-> (SELECT " + column + " FROM images WHERE id = ?) " +
+      "ORDER BY score " +
       "LIMIT ?",
-      imageRowMapper,
       id, id, limit
     );
   }
@@ -160,6 +162,10 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
   public List<Image> findByDimension(int value) {
     return jdbcTemplate.query( "SELECT * FROM images WHERE width = ? OR height = ?",  imageRowMapper,value, value);
+  }
+  public boolean existsByName(String name) {
+    Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class,name);
+    return count != null && count > 0;
   }
 
 }

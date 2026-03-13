@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Image {
-  private static Long count = Long.valueOf(0);
   private Long id;
   private String name;
   private byte[] data;
@@ -13,16 +12,21 @@ public class Image {
   private float[] hist2D;
   private float[] hist3D;
 
-  public Image(final String name, final byte[] data) {
-    id = count++;
+   public Image(final String name, final byte[] data) {
     this.name = name;
     this.data = data;
     this.keywords = new HashSet<>();
   }
 
-  public long getId() {
-    return id;
+
+  public Long getId() {
+  return id;
   }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
 
   public String getName() {
     return name;
