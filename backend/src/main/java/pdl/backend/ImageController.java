@@ -121,4 +121,20 @@ public class ImageController {
 
     return new ResponseEntity<>(nodes, HttpStatus.OK);
   }
+
+ @RequestMapping(value = "/images/{id}/info", method = RequestMethod.GET, produces = "application/json")
+@ResponseBody
+public ResponseEntity<?> getImageInfo(@PathVariable long id) {
+    return imageDao.retrieve(id)
+        .map(img -> {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("id", img.getId());
+            node.put("name", img.getName());
+            // On s'assure d'envoyer la longueur du tableau d'octets
+            node.put("size", img.getData().length); 
+            return ResponseEntity.ok((com.fasterxml.jackson.databind.JsonNode) node);
+        })
+        .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  
+    }
 }
