@@ -62,7 +62,7 @@ public class DescriptorService {
     }
 
     private float[] norm(float[] h, float s) {
-        if (s > 0) for (int i=0; i<h.length; i++) h[i] /= s;
+        //if (s > 0) for (int i=0; i<h.length; i++) h[i] /= s;
         return h;
     }
 }
