@@ -119,4 +119,40 @@ public class ImageController {
 
     return new ResponseEntity<>(nodes, HttpStatus.OK);
   }
+
+  @RequestMapping(value = "/images/{id}/metadata", method = RequestMethod.GET, produces = "application/json; charset=UTF-8")
+  @ResponseBody
+  public ResponseEntity<?> getImageMetadata(@PathVariable long id) {
+    Optional<Image> imageOpt = imageDao.retrieve(id);
+
+    if (imageOpt.isEmpty()) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    Image image = imageOpt.get();
+
+    String lowerName = image.getName().toLowerCase();
+    String type;
+
+    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+      type = MediaType.IMAGE_JPEG_VALUE;
+     } else if (lowerName.endsWith(".png")) {
+      type = MediaType.IMAGE_PNG_VALUE;
+    } else {
+      type = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+    }
+
+    ObjectNode node = mapper.createObjectNode();
+    node.put("name", image.getName());
+    node.put("type", type);
+    node.put("size", image.getWidth() + "x" + image.getHeight());
+
+    ArrayNode keywordsNode = mapper.createArrayNode();
+    for (String keyword : image.getKeywords()) {
+      keywordsNode.add(keyword);
+    }
+    node.set("keywords", keywordsNode);
+
+    return new ResponseEntity<>(node, HttpStatus.OK);
+  }
 }

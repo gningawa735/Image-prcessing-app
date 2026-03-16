@@ -7,6 +7,8 @@ public class Image {
   private Long id;
   private String name;
   private byte[] data;
+  private int height;
+  private int width;
   private Set<String> keywords;
   private float[] hist1D;
   private float[] hist2D;
@@ -35,7 +37,22 @@ public class Image {
   public void setName(final String name) {
     this.name = name;
   }
+  
+  public int getWidth(){
+    return width;
+  }
 
+  public void setWidth(int width){
+      this.width=width;
+  }
+
+  public int getHeight(){
+    return height;
+  }
+
+  public void setHeight(int height){
+      this.height=height;
+  }
   public byte[] getData() {
     return data;
   }

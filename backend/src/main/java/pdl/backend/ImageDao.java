@@ -29,14 +29,18 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   private final RowMapper<Image> imageRowMapper = new RowMapper<Image>() {
     @Override
     public Image mapRow(ResultSet rs, int rowNum) throws SQLException {
+      long id = rs.getLong("id");
       String name = rs.getString("name");
       String path = rs.getString("path");
-      long id = rs.getLong("id");
+      int width = rs.getInt("width");
+      int height = rs.getInt("height");
 
       try {
         byte[] data = Files.readAllBytes(new File(path).toPath());
         Image img = new Image(name, data);
         img.setId(id);
+        img.setWidth(width);
+        img.setHeight(height);
         return img;
       } catch (IOException e) {
         throw new RuntimeException("Impossible de lire le fichier : " + path, e);
@@ -74,6 +78,9 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       BufferedImage img = ImageIO.read(new ByteArrayInputStream(image.getData()));
       int width = img.getWidth();
       int height = img.getHeight();
+
+      image.setWidth(width);
+      image.setHeight(height);
 
       String d1 = null;
       String d2 = null;
