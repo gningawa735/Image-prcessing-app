@@ -165,4 +165,21 @@ public class ImageController {
       imageDao.addKeyword(id, tag);
       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
+
+  @RequestMapping(value = "/images/{id}/keywords", method = RequestMethod.DELETE)
+  @ResponseBody
+  public ResponseEntity<?> deleteKeyword(@PathVariable long id, @RequestParam String tag) {
+    Optional<Image> imageOpt = imageDao.retrieve(id);
+
+    if (imageOpt.isEmpty()) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    if (!imageDao.hasKeyword(id, tag)) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    imageDao.deleteKeyword(id, tag);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
 }

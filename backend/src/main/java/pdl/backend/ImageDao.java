@@ -194,6 +194,20 @@ public class ImageDao implements Dao<Image>, InitializingBean {
     Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class,name);
     return count != null && count > 0;
   }
+  public boolean hasKeyword(long id, String keyword) {
+    Integer count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM image_keywords WHERE image_id = ? AND keyword = ?",
+        Integer.class,
+        id, keyword
+    );
+    return count != null && count > 0;
+  }
 
+  public void deleteKeyword(long id, String keyword) {
+    jdbcTemplate.update(
+        "DELETE FROM image_keywords WHERE image_id = ? AND keyword = ?",
+        id, keyword
+    );
+  }
 
 }
