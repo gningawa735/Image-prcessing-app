@@ -23,53 +23,55 @@ public class ImageService {
         this.descriptorService = descriptorService;
     }
 
-@PostConstruct
-public void initImagesFromDisk() {
-    Path imagesDir = Paths.get("images").toAbsolutePath().normalize();
+    @PostConstruct
+    public void initImagesFromDisk() {
+        Path imagesDir = Paths.get("images").toAbsolutePath().normalize();
 
-    if (!Files.exists(imagesDir) || !Files.isDirectory(imagesDir)) {
-        throw new IllegalStateException("Besoin 1: dossier 'images' introuvable.");
-    }
-
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(imagesDir)) { 
-        for (Path p : stream) {  
-            if (Files.isDirectory(p) || !isSupportedImage(p)) continue;
-
-            try {
-                byte[] data = Files.readAllBytes(p);
-                String name = p.getFileName().toString();
-                if (imageDao.existsByName(name)) {
-                    System.out.println("[BOOT] SKIP déjà indexée : " + name);
-                    continue;
-                }
-                indexAndSaveImage(name, data);
-                System.out.println("[BOOT] + " + name + " indexée (H1D, H2D, H3D)");
-            } catch (Exception e) {
-                System.err.println("[BOOT] SKIP " + p.getFileName() + " : " + e.getMessage());
-            }
+        if (!Files.exists(imagesDir) || !Files.isDirectory(imagesDir)) {
+            throw new IllegalStateException("Besoin 1: dossier 'images' introuvable.");
         }
-        System.out.println("[BOOT] Images chargées: " + imageDao.retrieveAll().size());
-    } catch (IOException e) {
-        throw new IllegalStateException("Erreur lecture dossier images", e);
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(imagesDir)) {
+            for (Path p : stream) {
+                if (Files.isDirectory(p) || !isSupportedImage(p))
+                    continue;
+
+                try {
+                    byte[] data = Files.readAllBytes(p);
+                    String name = p.getFileName().toString();
+                    if (imageDao.existsByName(name)) {
+                        System.out.println("[BOOT] SKIP déjà indexée : " + name);
+                        continue;
+                    }
+                    indexAndSaveImage(name, data);
+                    System.out.println("[BOOT] + " + name + " indexée (H1D, H2D, H3D)");
+                } catch (Exception e) {
+                    System.err.println("[BOOT] SKIP " + p.getFileName() + " : " + e.getMessage());
+                }
+            }
+            System.out.println("[BOOT] Images chargées: " + imageDao.retrieveAll().size());
+        } catch (IOException e) {
+            throw new IllegalStateException("Erreur lecture dossier images", e);
+        }
     }
-}
 
-private void indexAndSaveImage(String fileName, byte[] data) throws IOException {
-    BufferedImage img = ImageIO.read(new ByteArrayInputStream(data));
-    if (img == null) throw new IOException("Impossible de décoder l'image : " + fileName);
+    private void indexAndSaveImage(String fileName, byte[] data) throws IOException {
+        BufferedImage img = ImageIO.read(new ByteArrayInputStream(data));
+        if (img == null)
+            throw new IOException("Impossible de décoder l'image : " + fileName);
 
-    Image image = new Image(fileName, data);
-    image.setHist1D(descriptorService.compute(img, "H1D"));
-    image.setHist2D(descriptorService.compute(img, "H2D"));
-    image.setHist3D(descriptorService.compute(img, "H3D"));
+        Image image = new Image(fileName, data);
+        image.setHist1D(descriptorService.compute(img, "H1D"));
+        image.setHist2D(descriptorService.compute(img, "H2D"));
+        image.setHist3D(descriptorService.compute(img, "H3D"));
 
-    imageDao.create(image);
-}
+        imageDao.create(image);
+    }
 
-private boolean isSupportedImage(Path p) {
-    String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-    return n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png");
-}
+    private boolean isSupportedImage(Path p) {
+        String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+        return n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png");
+    }
 
     public boolean deleteImage(long id) {
         Optional<Image> imageOpt = imageDao.retrieve(id);
@@ -78,7 +80,7 @@ private boolean isSupportedImage(Path p) {
             try {
                 Path path = Paths.get("images").resolve(image.getName());
                 Files.deleteIfExists(path);
-                
+
                 imageDao.delete(image);
                 return true;
             } catch (IOException e) {
