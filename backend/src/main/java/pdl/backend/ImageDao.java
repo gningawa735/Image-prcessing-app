@@ -41,6 +41,12 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         img.setId(id);
         img.setWidth(width);
         img.setHeight(height);
+
+        List<String> keywords = jdbcTemplate.queryForList(
+                "SELECT keyword FROM image_keywords WHERE image_id = ?",
+                String.class, id
+        );
+        for (String kw : keywords) img.addKeyword(kw);
         return img;
       } catch (IOException e) {
         throw new RuntimeException("Impossible de lire le fichier : " + path, e);
@@ -66,6 +72,14 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         descriptor3d vector(64)
       )
       """);
+
+    jdbcTemplate.execute("""
+        CREATE TABLE IF NOT EXISTS image_keywords (
+          image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+          keyword VARCHAR(255) NOT NULL,
+          PRIMARY KEY (image_id, keyword)
+        )
+        """);
   }
 
   @Override
@@ -151,6 +165,12 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       id, id, limit
     );
   }
+  public void addKeyword(long id, String keyword) {
+    jdbcTemplate.update(
+        "INSERT INTO image_keywords (image_id, keyword) VALUES (?, ?) ON CONFLICT DO NOTHING",
+        id, keyword
+    );
+  }
 
     public List<Image> findByName(String name) {
       return jdbcTemplate.query(  "SELECT * FROM images WHERE name LIKE ?",  imageRowMapper,   "%" + name + "%" );
@@ -174,5 +194,6 @@ public class ImageDao implements Dao<Image>, InitializingBean {
     Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class,name);
     return count != null && count > 0;
   }
+
 
 }

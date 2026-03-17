@@ -155,4 +155,14 @@ public class ImageController {
 
     return new ResponseEntity<>(node, HttpStatus.OK);
   }
+  @RequestMapping(value = "/images/{id}/keywords", method = RequestMethod.PUT)
+  @ResponseBody
+  public ResponseEntity<?> addKeyword(@PathVariable long id, @RequestParam String tag) {
+      Optional<Image> imageOpt = imageDao.retrieve(id);
+      if (imageOpt.isEmpty()) {
+          return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+      }
+      imageDao.addKeyword(id, tag);
+      return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
 }
