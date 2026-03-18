@@ -20,17 +20,17 @@ public class DescriptorService {
 
     public float[] hist1D(BufferedImage img, int n) {
         GrayU8 in = ConvertBufferedImage.convertFrom(img, (GrayU8) null);
-        float[] h = new float[n];
+        float[] h = new float[n]; float s = 0;
         for (int y = 1; y < in.height - 1; y++) {
             for (int x = 1; x < in.width - 1; x++) {
                 int gx = in.get(x+1, y) - in.get(x-1, y), gy = in.get(x, y+1) - in.get(x, y-1);
                 int mag = Math.abs(gx) + Math.abs(gy);
                 if (mag == 0) continue;
                 int b = Math.min((int)((Math.atan2(gy, gx) + Math.PI) * n / (2 * Math.PI)), n - 1);
-                h[b] += mag;
+                h[b] += mag; s += mag;
             }
         }
-        return h;
+        return norm(h, s);
     }
 
     public float[] hist2D(BufferedImage img, int bH, int bS) {
@@ -42,7 +42,7 @@ public class DescriptorService {
                 h[Math.min((int)(hsv[0]*bH), bH-1) * bS + Math.min((int)(hsv[1]*bS), bS-1)]++;
             }
         }
-        return h;
+        return norm(h, img.getWidth() * img.getHeight());
     }
 
     public float[] hist3D(BufferedImage img, int bR, int bG, int bB) {
@@ -54,11 +54,15 @@ public class DescriptorService {
                 h[r * (bG * bB) + g * bB + b]++;
             }
         }
-        return h;
+        return norm(h, img.getWidth() * img.getHeight());
     }
 
     private void rgbToHsv(int r, int g, int b, float[] out) {
         Color.RGBtoHSB(r, g, b, out);
     }
 
+    private float[] norm(float[] h, float s) {
+        if (s > 0) for (int i=0; i<h.length; i++) h[i] /= s;
+        return h;
+    }
 }

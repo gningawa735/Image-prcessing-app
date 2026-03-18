@@ -135,7 +135,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
     return jdbcTemplate.queryForList(
       "SELECT id, " +
-      column + " <-> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
+      column + " <=> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
       "FROM images " +
       "WHERE id <> ? " +
       "AND " + column + " IS NOT NULL " +

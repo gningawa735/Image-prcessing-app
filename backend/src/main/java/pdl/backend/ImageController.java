@@ -130,7 +130,6 @@ public ResponseEntity<?> getImageInfo(@PathVariable long id) {
             ObjectNode node = mapper.createObjectNode();
             node.put("id", img.getId());
             node.put("name", img.getName());
-            // On s'assure d'envoyer la longueur du tableau d'octets
             node.put("size", img.getData().length); 
             return ResponseEntity.ok((com.fasterxml.jackson.databind.JsonNode) node);
         })
