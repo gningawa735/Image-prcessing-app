@@ -6,22 +6,23 @@ const routes: Array<RouteRecordRaw> = [
     path: "/",
     name: "home",
     component: () => import("./components/Home.vue"),
-    props: true
+    props: true,
   },
-
-  // route pour deposer une image
   {
     path: "/upload",
     name: "upload",
-    component: () => import("./components/Upload.vue")
+    component: () => import("./components/Upload.vue"),
   },
-
-  // route pour afficher la galerie
   {
     path: "/gallery",
     name: "gallery",
-    component: () => import("./components/Gallery.vue")
-  }
+    component: () => import("./components/Gallery.vue"),
+  },
+  {
+    path: "/search",
+    name: "search",
+    component: () => import("./components/Search.vue"),
+  },
 ];
 
 const router = createRouter({
