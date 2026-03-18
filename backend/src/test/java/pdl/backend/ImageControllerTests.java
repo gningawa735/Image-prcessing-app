@@ -65,4 +65,15 @@ public class ImageControllerTests {
     verify(imageDao).retrieve(1L);
     verify(imageDao).similarImages(1L, 5, 1);
   }
+  @Test
+    public void getSimilarImagesShouldReturnNotFound() throws Exception {
+    when(imageDao.retrieve(999L)).thenReturn(Optional.empty());
+
+    mockMvc.perform(get("/images/999/similar")
+            .param("number", "5")
+            .param("descriptor", "H1D"))
+        .andExpect(status().isNotFound());
+
+    verify(imageDao).retrieve(999L);
+    }
 }
