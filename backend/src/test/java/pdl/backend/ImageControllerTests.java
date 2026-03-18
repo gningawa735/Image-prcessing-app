@@ -1,10 +1,12 @@
 package pdl.backend;
 
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -76,4 +78,122 @@ public class ImageControllerTests {
 
     verify(imageDao).retrieve(999L);
     }
+
+    @Test
+    public void getSimilarImagesShouldReturnBadRequest() throws Exception {
+        Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+        image.setId(1L);
+
+        when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+
+        mockMvc.perform(get("/images/1/similar")
+                .param("number", "5")
+                .param("descriptor", "XYZ"))
+            .andExpect(status().isBadRequest());
+
+        verify(imageDao).retrieve(1L);
+  }
+  @Test
+  public void getImageMetadataShouldReturnSuccess() throws Exception {
+    Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+    image.setId(1L);
+    image.setWidth(640);
+    image.setHeight(480);
+    image.addKeyword("plat");
+    image.addKeyword("afrique");
+
+    when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+
+    mockMvc.perform(get("/images/1/metadata"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("application/json; charset=UTF-8"))
+        .andExpect(jsonPath("$.name").value("ndole.jpg"))
+        .andExpect(jsonPath("$.type").value("image/jpeg"))
+        .andExpect(jsonPath("$.size").value("640x480"))
+        .andExpect(jsonPath("$.keywords").isArray());
+
+    verify(imageDao).retrieve(1L);
+  }
+
+  @Test
+  public void getImageMetadataShouldReturnNotFound() throws Exception {
+    when(imageDao.retrieve(999L)).thenReturn(Optional.empty());
+
+    mockMvc.perform(get("/images/999/metadata"))
+        .andExpect(status().isNotFound());
+
+    verify(imageDao).retrieve(999L);
+  }
+
+  @Test
+  public void addKeywordShouldReturnNoContent() throws Exception {
+    Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+    image.setId(1L);
+
+    when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+    doNothing().when(imageDao).addKeyword(1L, "cuisine");
+
+    mockMvc.perform(put("/images/1/keywords")
+            .param("tag", "cuisine"))
+        .andExpect(status().isNoContent());
+
+    verify(imageDao).retrieve(1L);
+    verify(imageDao).addKeyword(1L, "cuisine");
+  }
+
+  @Test
+  public void addKeywordShouldReturnNotFound() throws Exception {
+    when(imageDao.retrieve(999L)).thenReturn(Optional.empty());
+
+    mockMvc.perform(put("/images/999/keywords")
+            .param("tag", "cuisine"))
+        .andExpect(status().isNotFound());
+
+    verify(imageDao).retrieve(999L);
+  }
+
+  @Test
+  public void deleteKeywordShouldReturnNoContent() throws Exception {
+    Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+    image.setId(1L);
+
+    when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+    when(imageDao.hasKeyword(1L, "cuisine")).thenReturn(true);
+    doNothing().when(imageDao).deleteKeyword(1L, "cuisine");
+
+    mockMvc.perform(delete("/images/1/keywords")
+            .param("tag", "cuisine"))
+        .andExpect(status().isNoContent());
+
+    verify(imageDao).retrieve(1L);
+    verify(imageDao).hasKeyword(1L, "cuisine");
+    verify(imageDao).deleteKeyword(1L, "cuisine");
+  }
+
+  @Test
+  public void deleteKeywordShouldReturnBadRequest() throws Exception {
+    Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+    image.setId(1L);
+
+    when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+    when(imageDao.hasKeyword(1L, "inexistant")).thenReturn(false);
+
+    mockMvc.perform(delete("/images/1/keywords")
+            .param("tag", "inexistant"))
+        .andExpect(status().isBadRequest());
+
+    verify(imageDao).retrieve(1L);
+    verify(imageDao).hasKeyword(1L, "inexistant");
+  }
+
+  @Test
+  public void deleteKeywordShouldReturnNotFound() throws Exception {
+    when(imageDao.retrieve(999L)).thenReturn(Optional.empty());
+
+    mockMvc.perform(delete("/images/999/keywords")
+            .param("tag", "cuisine"))
+        .andExpect(status().isNotFound());
+
+    verify(imageDao).retrieve(999L);
+  }
 }
