@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
 import java.awt.image.BufferedImage;
 
 @Repository
@@ -45,10 +46,11 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         img.setHeight(height);
 
         List<String> keywords = jdbcTemplate.queryForList(
-                "SELECT keyword FROM image_keywords WHERE image_id = ?",
-                String.class, id
-        );
-        for (String kw : keywords) img.addKeyword(kw);
+            "SELECT keyword FROM image_keywords WHERE image_id = ?",
+            String.class, id);
+        for (String kw : keywords) {
+          img.addKeyword(kw);
+        }
         return img;
       } catch (IOException e) {
         throw new RuntimeException("Impossible de lire le fichier : " + path, e);
@@ -61,26 +63,24 @@ public class ImageDao implements Dao<Image>, InitializingBean {
     jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 
     jdbcTemplate.execute("""
-      CREATE TABLE IF NOT EXISTS images (
-        id BIGSERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        path VARCHAR(255) NOT NULL,
-        size BIGINT NOT NULL,
-        type VARCHAR(100) NOT NULL,
-        width INT,
-        height INT,
-        descriptor1d vector(9),
-        descriptor2d vector(64),
-        descriptor3d vector(64)
-      )
-      """);
+        CREATE TABLE IF NOT EXISTS images (
+          id BIGSERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          path VARCHAR(255) NOT NULL,
+          size BIGINT NOT NULL,
+          type VARCHAR(100) NOT NULL,
+          width INT,
+          height INT,
+          descriptor1d vector(9),
+          descriptor2d vector(64),
+          descriptor3d vector(64)
+        );
 
-    jdbcTemplate.execute("""
         CREATE TABLE IF NOT EXISTS image_keywords (
           image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE,
           keyword VARCHAR(255) NOT NULL,
           PRIMARY KEY (image_id, keyword)
-        )
+        );
         """);
   }
 
@@ -91,7 +91,12 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       try (FileOutputStream fos = new FileOutputStream(filePath)) {
         fos.write(image.getData());
       }
+
       BufferedImage img = ImageIO.read(new ByteArrayInputStream(image.getData()));
+      if (img == null) {
+        throw new RuntimeException("Format d'image non supporté pour " + image.getName());
+      }
+
       int width = img.getWidth();
       int height = img.getHeight();
 
@@ -101,26 +106,30 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       String d1 = null;
       String d2 = null;
       String d3 = null;
-      if (image.getHist1D() != null){
+      if (image.getHist1D() != null) {
         d1 = java.util.Arrays.toString(image.getHist1D()).replace(" ", "");
+        if (image.getHist2D() != null) {
+          d2 = java.util.Arrays.toString(image.getHist2D()).replace(" ", "");
+        }
+        if (image.getHist3D() != null) {
+          d3 = java.util.Arrays.toString(image.getHist3D()).replace(" ", "");
+        }
+      }
 
-        if (image.getHist2D() != null)
-        d2 = java.util.Arrays.toString(image.getHist2D()).replace(" ", "");
-
-        if (image.getHist3D() != null)
-        d3 = java.util.Arrays.toString(image.getHist3D()).replace(" ", "");
-    }
-      jdbcTemplate.update("INSERT INTO images (name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) VALUES (?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
-        image.getName(),
-        filePath.toString(),
-        image.getData().length,
-        image.getName().lastIndexOf('.') > 0 ? image.getName().substring(image.getName().lastIndexOf('.') + 1) : "unknown",
-        width,
-        height,
-        d1,
-        d2,
-        d3
-    );
+      jdbcTemplate.update(
+          "INSERT INTO images (name, path, size, type, width, height, descriptor1d, descriptor2d, descriptor3d) "
+              + "VALUES (?, ?, ?, ?, ?, ?, ?::vector, ?::vector, ?::vector)",
+          image.getName(),
+          filePath,
+          image.getData().length,
+          image.getName().lastIndexOf('.') > 0
+              ? image.getName().substring(image.getName().lastIndexOf('.') + 1)
+              : "unknown",
+          width,
+          height,
+          d1,
+          d2,
+          d3);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -129,10 +138,9 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   @Override
   public Optional<Image> retrieve(long id) {
     List<Image> result = jdbcTemplate.query(
-      "SELECT * FROM images WHERE id = ?",
-      imageRowMapper,
-      id
-    );
+        "SELECT * FROM images WHERE id = ?",
+        imageRowMapper,
+        id);
     return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
   }
 
@@ -149,53 +157,46 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   public void delete(Image image) {
     System.out.println("ID: " + image.getId());
     jdbcTemplate.update("DELETE FROM images WHERE id = ?", image.getId());
-    // Supprimer le fichier réel sur le serveur (le disque dur)
+
     try {
-        Path path = Paths.get("images/" + image.getName());
-        
-        boolean deleted = Files.deleteIfExists(path);
-        
-        if (deleted) {
-            System.out.println("Succès : Fichier " + image.getName() + " supprimé du disque.");
-        }
+      Path path = Paths.get("images/" + image.getName());
+      boolean deleted = Files.deleteIfExists(path);
+      if (deleted) {
+        System.out.println("Succès : Fichier " + image.getName() + " supprimé du disque.");
+      }
     } catch (IOException e) {
-        // En cas de problème (par exemple fichier ouvert ailleurs.)
-        System.err.println("Erreur : Impossible de supprimer le fichier physique.");
-        e.printStackTrace();
+      System.err.println("Erreur : Impossible de supprimer le fichier physique.");
+      e.printStackTrace();
     }
   }
 
   public List<Map<String, Object>> similarImages(long id, int limit, int descriptorType) {
-    String column =
-      descriptorType == 1 ? "descriptor1d" :
-      descriptorType == 2 ? "descriptor2d" :
-      "descriptor3d";
+    String column = descriptorType == 1 ? "descriptor1d" : descriptorType == 2 ? "descriptor2d" : "descriptor3d";
 
     return jdbcTemplate.queryForList(
-      "SELECT id, " +
-      column + " <=> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
-      "FROM images " +
-      "WHERE id <> ? " +
-      "AND " + column + " IS NOT NULL " +
-      "ORDER BY score ASC " + 
-      "LIMIT ?",
-      id, id, limit
-    );
+        "SELECT id, "
+            + column + " <=> (SELECT " + column + " FROM images WHERE id = ?) AS score "
+            + "FROM images "
+            + "WHERE id <> ? "
+            + "AND " + column + " IS NOT NULL "
+            + "ORDER BY score ASC "
+            + "LIMIT ?",
+        id, id, limit);
   }
+
   public void addKeyword(long id, String keyword) {
     jdbcTemplate.update(
         "INSERT INTO image_keywords (image_id, keyword) VALUES (?, ?) ON CONFLICT DO NOTHING",
-        id, keyword
-    );
+        id, keyword);
   }
 
-    public List<Image> findByName(String name) {
-      return jdbcTemplate.query(  "SELECT * FROM images WHERE name LIKE ?",  imageRowMapper,   "%" + name + "%" );
-    }
+  public List<Image> findByName(String name) {
+    return jdbcTemplate.query("SELECT * FROM images WHERE name LIKE ?", imageRowMapper, "%" + name + "%");
+  }
 
-    public List<Image> findByFormat(String format) {
-     return jdbcTemplate.query( "SELECT * FROM images WHERE type = ?",  imageRowMapper, format);
-    }
+  public List<Image> findByFormat(String format) {
+    return jdbcTemplate.query("SELECT * FROM images WHERE type = ?", imageRowMapper, format);
+  }
 
   public List<Image> findByKeyword(String keyword) {
     return retrieveAll()
@@ -205,26 +206,32 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   }
 
   public List<Image> findByDimension(int value) {
-    return jdbcTemplate.query( "SELECT * FROM images WHERE width = ? OR height = ?",  imageRowMapper,value, value);
+    return jdbcTemplate.query("SELECT * FROM images WHERE width = ? OR height = ?", imageRowMapper, value, value);
   }
+
   public boolean existsByName(String name) {
-    Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class,name);
+    Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class, name);
     return count != null && count > 0;
   }
+
   public boolean hasKeyword(long id, String keyword) {
     Integer count = jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM image_keywords WHERE image_id = ? AND keyword = ?",
         Integer.class,
-        id, keyword
-    );
+        id, keyword);
     return count != null && count > 0;
   }
 
   public void deleteKeyword(long id, String keyword) {
     jdbcTemplate.update(
         "DELETE FROM image_keywords WHERE image_id = ? AND keyword = ?",
-        id, keyword
-    );
+        id, keyword);
   }
 
+  public List<String> getAllKeywords() {
+    return retrieveAll().stream()
+        .flatMap(img -> img.getKeywords().stream())
+        .distinct()
+        .toList();
+  }
 }
