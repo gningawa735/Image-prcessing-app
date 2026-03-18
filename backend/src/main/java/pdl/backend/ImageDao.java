@@ -29,14 +29,24 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   private final RowMapper<Image> imageRowMapper = new RowMapper<Image>() {
     @Override
     public Image mapRow(ResultSet rs, int rowNum) throws SQLException {
+      long id = rs.getLong("id");
       String name = rs.getString("name");
       String path = rs.getString("path");
-      long id = rs.getLong("id");
+      int width = rs.getInt("width");
+      int height = rs.getInt("height");
 
       try {
         byte[] data = Files.readAllBytes(new File(path).toPath());
         Image img = new Image(name, data);
         img.setId(id);
+        img.setWidth(width);
+        img.setHeight(height);
+
+        List<String> keywords = jdbcTemplate.queryForList(
+                "SELECT keyword FROM image_keywords WHERE image_id = ?",
+                String.class, id
+        );
+        for (String kw : keywords) img.addKeyword(kw);
         return img;
       } catch (IOException e) {
         throw new RuntimeException("Impossible de lire le fichier : " + path, e);
@@ -62,6 +72,14 @@ public class ImageDao implements Dao<Image>, InitializingBean {
         descriptor3d vector(64)
       )
       """);
+
+    jdbcTemplate.execute("""
+        CREATE TABLE IF NOT EXISTS image_keywords (
+          image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+          keyword VARCHAR(255) NOT NULL,
+          PRIMARY KEY (image_id, keyword)
+        )
+        """);
   }
 
   @Override
@@ -74,6 +92,9 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       BufferedImage img = ImageIO.read(new ByteArrayInputStream(image.getData()));
       int width = img.getWidth();
       int height = img.getHeight();
+
+      image.setWidth(width);
+      image.setHeight(height);
 
       String d1 = null;
       String d2 = null;
@@ -144,6 +165,12 @@ public class ImageDao implements Dao<Image>, InitializingBean {
       id, id, limit
     );
   }
+  public void addKeyword(long id, String keyword) {
+    jdbcTemplate.update(
+        "INSERT INTO image_keywords (image_id, keyword) VALUES (?, ?) ON CONFLICT DO NOTHING",
+        id, keyword
+    );
+  }
 
     public List<Image> findByName(String name) {
       return jdbcTemplate.query(  "SELECT * FROM images WHERE name LIKE ?",  imageRowMapper,   "%" + name + "%" );
@@ -166,6 +193,21 @@ public class ImageDao implements Dao<Image>, InitializingBean {
   public boolean existsByName(String name) {
     Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM images WHERE name = ?", Integer.class,name);
     return count != null && count > 0;
+  }
+  public boolean hasKeyword(long id, String keyword) {
+    Integer count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM image_keywords WHERE image_id = ? AND keyword = ?",
+        Integer.class,
+        id, keyword
+    );
+    return count != null && count > 0;
+  }
+
+  public void deleteKeyword(long id, String keyword) {
+    jdbcTemplate.update(
+        "DELETE FROM image_keywords WHERE image_id = ? AND keyword = ?",
+        id, keyword
+    );
   }
 
 }
