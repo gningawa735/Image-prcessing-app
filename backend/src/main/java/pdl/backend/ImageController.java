@@ -54,9 +54,10 @@ public class ImageController {
   public ResponseEntity<?> addImage(@RequestParam MultipartFile file, RedirectAttributes redirectAttributes) {
     if (file.isEmpty())
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    if (!file.getContentType().equals(MediaType.IMAGE_JPEG_VALUE))
-      return new ResponseEntity<>(HttpStatus.UNSUPPORTED_MEDIA_TYPE); 
-
+    String contentType = file.getContentType();
+    if (!MediaType.IMAGE_JPEG_VALUE.equals(contentType) &&     !MediaType.IMAGE_PNG_VALUE.equals(contentType)) {
+      return new ResponseEntity<>(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
     try {
       Image image = new Image(file.getOriginalFilename(), file.getBytes());
       imageDao.create(image);
@@ -69,20 +70,31 @@ public class ImageController {
 
   @RequestMapping(value = "/images/{id}", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
   public ResponseEntity<?> getImage(@PathVariable long id) {
-    Image image = imageDao.retrieve(id).get();
-    if (image == null)
+    Optional<Image> imageOpt = imageDao.retrieve(id);
+    if (imageOpt.isEmpty()) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+    Image image = imageOpt.get();
+    MediaType mediaType;
+    String lowerName = image.getName().toLowerCase();
+    if (lowerName.endsWith(".png")) {
+      mediaType = MediaType.IMAGE_PNG;
+    } else {
+      mediaType = MediaType.IMAGE_JPEG;
+    }
     return ResponseEntity
       .ok()
-      .contentType(MediaType.IMAGE_JPEG)
+      .contentType(mediaType)
       .body(image.getData());
   }
   
   @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
   public ResponseEntity<?> deleteImage(@PathVariable long id) {
-    Image image = imageDao.retrieve(id).get();
-    if (image == null)
+    Optional<Image> imageOpt = imageDao.retrieve(id);
+    if (imageOpt.isEmpty()) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+    Image image = imageOpt.get();
     imageDao.delete(image);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
