@@ -127,6 +127,7 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
   @Override
   public void delete(Image image) {
+    System.out.println("ID: " + image.getId());
     jdbcTemplate.update("DELETE FROM images WHERE id = ?", image.getId());
     // Supprimer le fichier réel sur le serveur (le disque dur)
     try {
