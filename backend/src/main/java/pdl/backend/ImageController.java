@@ -84,6 +84,34 @@ public class ImageController {
                 .body(image.getData());
     }
 
+    // Besoin 8 : métadonnées
+    @RequestMapping(
+            value = "/images/{id}/metadata",
+            method = RequestMethod.GET,
+            produces = "application/json; charset=UTF-8"
+    )
+    public ResponseEntity<?> getImageMetadata(@PathVariable long id) {
+        Optional<Image> opt = imageDao.retrieve(id);
+        if (opt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Image img = opt.get();
+
+        ObjectNode node = mapper.createObjectNode();
+        node.put("name", img.getName());
+        node.put("type", "image/jpeg");
+        node.put("size", img.getWidth() + "x" + img.getHeight());
+
+        ArrayNode keywordsNode = mapper.createArrayNode();
+        for (String k : img.getKeywords()) {
+            keywordsNode.add(k);
+        }
+        node.set("keywords", keywordsNode);
+
+        return new ResponseEntity<>(node, HttpStatus.OK);
+    }
+
     // Besoin 9 : suppression
     @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteImage(@PathVariable long id) {
@@ -134,6 +162,41 @@ public class ImageController {
         }
 
         return new ResponseEntity<>(nodes, HttpStatus.OK);
+    }
+
+    // Ajouter un mot-clé (PUT /images/{id}/keywords?tag=...)
+    @RequestMapping(value = "/images/{id}/keywords", method = RequestMethod.PUT)
+    public ResponseEntity<?> addKeyword(
+            @PathVariable long id,
+            @RequestParam("tag") String tag) {
+
+        Optional<Image> opt = imageDao.retrieve(id);
+        if (opt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        imageDao.addKeyword(id, tag);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    // Supprimer un mot-clé (DELETE /images/{id}/keywords?tag=...)
+    @RequestMapping(value = "/images/{id}/keywords", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteKeyword(
+            @PathVariable long id,
+            @RequestParam("tag") String tag) {
+
+        Optional<Image> opt = imageDao.retrieve(id);
+        if (opt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        boolean has = imageDao.hasKeyword(id, tag);
+        if (!has) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        imageDao.deleteKeyword(id, tag);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     // Besoin 15 : mots-clés disponibles
