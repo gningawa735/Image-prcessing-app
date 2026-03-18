@@ -3,47 +3,50 @@ import { ref } from 'vue'
 import ImageGallery from './components/ImageGallery.vue'
 import ImageDetails from './components/ImageDetails.vue'
 
-// L'ID qui fait le pont entre les deux composants
 const selectedId = ref<number | null>(null)
+
+// On crée une référence pour "viser" le composant ImageGallery
+const galleryRef = ref<any>(null)
+
+/**
+ * Fonction de rafraîchissement global (Besoin 20)
+ * Appellée quand ImageDetails émet 'image-deleted'
+ */
+const refreshAll = () => {
+  selectedId.value = null 
+  
+  // On demande à la galerie de recharger sa liste depuis le serveur
+  if (galleryRef.value && galleryRef.value.fetchImages) {
+    galleryRef.value.fetchImages()
+  }
+}
 </script>
 
 <template>
   <div id="app">
-    <h1>Notre Galerie & Analyse</h1>
+    <h1>Ma Galerie d'Images & Analyse</h1>
     
     <div class="main-layout">
       <div class="gallery-side">
-        <ImageGallery @select-image="(id) => selectedId = id" />
+        <ImageGallery 
+          ref="galleryRef" 
+          @select-image="(id) => selectedId = id" 
+        />
       </div>
       
       <div class="details-side">
-        <ImageDetails :image-id="selectedId" />
+        <ImageDetails 
+          :image-id="selectedId"
+          @image-deleted="refreshAll" 
+        />
       </div>
     </div>
   </div>
 </template>
 
 <style>
-#app {
-  font-family: sans-serif;
-  padding: 20px;
-}
-
-.main-layout {
-  display: flex;
-  align-items: flex-start; /* Aligne le haut des deux colonnes */
-  gap: 40px;
-}
-
-.gallery-side {
-  flex: 2; /* Donne plus de place à la galerie */
-  border-right: 1px solid #eee;
-  padding-right: 20px;
-}
-
-.details-side {
-  flex: 1; /* Le panneau de détails est plus étroit */
-  position: sticky; /* Garde les détails visibles même si on scrolle la galerie */
-  top: 20px;
-}
+#app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #2c3e50; }
+.main-layout { display: flex; align-items: flex-start; gap: 40px; }
+.gallery-side { flex: 2; border-right: 1px solid #eee; padding-right: 20px; }
+.details-side { flex: 1; position: sticky; top: 20px; }
 </style>
