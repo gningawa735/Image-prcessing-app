@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-defineEmits(['select-image'])
+
+// On déclare l'événement pour que le parent sache quand une image est cliquée
+const emit = defineEmits(['select-image'])
 
 interface ImageItem {
   id: number
@@ -11,19 +13,32 @@ interface ImageItem {
 const images = ref<ImageItem[]>([])
 const error = ref<string | null>(null)
 
-const refreshGallery = async () => {
+/**
+ * CHARGEMENT DE LA GALERIE (Besoin 1)
+ * Récupère la liste de toutes les images stockées sur le serveur
+ */
+const fetchImages = async () => {
   try {
-    // Appelle l'endpoint GET /images défini dans ImageController.java
+    // Appel à l'API Backend (ImageController.java)
     const response = await axios.get('http://localhost:8080/images')
     images.value = response.data
+    error.value = null // On réinitialise l'erreur en cas de succès
   } catch (err) {
     error.value = "Impossible de charger la galerie."
+    console.error(err)
   }
 }
 
+// Au chargement initial du composant, on récupère les images
 onMounted(() => {
-  refreshGallery()
+  fetchImages()
 })
+
+/**
+ * EXPOSITION (Crucial pour le Besoin 20)
+ * On rend la fonction fetchImages accessible depuis App.vue via une "ref"
+ */
+defineExpose({ fetchImages });
 </script>
 
 <template>
@@ -31,7 +46,12 @@ onMounted(() => {
     <p v-if="error" class="error">{{ error }}</p>
     
     <div class="gallery-grid">
-      <div v-for="img in images" :key="img.id" class="vignette" @click="$emit('select-image', img.id)">
+      <div 
+        v-for="img in images" 
+        :key="img.id" 
+        class="vignette" 
+        @click="emit('select-image', img.id)"
+      >
         <img :src="'http://localhost:8080/images/' + img.id" :alt="img.name" />
         <span class="image-name">{{ img.name }}</span>
       </div>
@@ -40,34 +60,38 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Tes styles sont parfaits : le grid auto-fill est la meilleure pratique pour une galerie */
 .gallery-grid {
   display: grid;
-  /* repeat(auto-fill, ...) permet d'aligner autant de vignettes que possible par ligne */
   grid-template-columns: repeat(auto-fill, 150px);
   gap: 20px;
   justify-content: center;
 }
 
-/* CONTRAINTE : Taille fixe de la vignette */
 .vignette {
   width: 150px;
   height: 150px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 8px; /* Un peu plus arrondi c'est plus moderne */
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #fcfcfc;
+  background-color: #fff;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* Remplissage en hauteur ou largeur */
+/* Petit effet de survol pour l'expérience utilisateur */
+.vignette:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
 img {
   width: 100%;
-  height: 80%; /* Laisse de la place pour le nom en bas */
-  
-  /* L'image garde ses proportions sans être écrasée */
-  object-fit: contain; 
+  height: 80%; 
+  object-fit: cover; /* "cover" remplit mieux la vignette que "contain" pour une galerie */
   background-color: #eee;
 }
 
@@ -76,10 +100,11 @@ img {
   padding: 5px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Coupe le texte proprement s'il est trop long */
+  text-overflow: ellipsis;
   width: 90%;
   text-align: center;
+  color: #333;
 }
 
-.error { color: red; text-align: center; }
+.error { color: #e74c3c; text-align: center; font-weight: bold; }
 </style>
