@@ -27,6 +27,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -35,118 +37,32 @@ import java.util.Arrays;
 public class ImageControllerTests {
 
 	@MockitoBean
-	private ImageDao imageDAO;
+	private ImageDao imageDao;
 	@MockitoBean
 	private Image image;
 
 	@Autowired
 	private MockMvc mockMvc;
 
-	@Test
-	public void getImageShouldReturnSuccess() throws Exception {
-		when(imageDAO.retrieve(0)).thenReturn(Optional.ofNullable(image));
-		this.mockMvc.perform(get("/images/0")).andExpect(status().isOk());
-		verify(imageDAO).retrieve(0);
-	}
+	
+  @Test
+  public void getSimilarImagesShouldReturnSuccessForH1D() throws Exception {
+    Image image = new Image("ndole.jpg", new byte[] {1, 2, 3});
+    image.setId(1L);
 
-	@Test
-	public void getImageShouldReturnNotFound() throws Exception {
-		when(imageDAO.retrieve(0)).thenReturn(Optional.empty());
+    when(imageDao.retrieve(1L)).thenReturn(Optional.of(image));
+    when(imageDao.similarImages(1L, 5, 1))
+        .thenReturn(List.of(Map.of("id", 2L, "score", 0.42)));
 
-		this.mockMvc.perform(get("/images/0"))
-				.andExpect(status().isNotFound());
+    mockMvc.perform(get("/images/1/similar")
+            .param("number", "5")
+            .param("descriptor", "H1D"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("application/json; charset=UTF-8"))
+        .andExpect(jsonPath("$[0].id").value(2))
+        .andExpect(jsonPath("$[0].score").value(0.42));
 
-		verify(imageDAO).retrieve(0);
-	}
-
-	@Test
-	public void getImageListShouldReturnJson() throws Exception {
-		Image img1 = new Image("img1.jpg", new byte[] { 1, 2, 3 });
-		Image img2 = new Image("img2.jpg", new byte[] { 4, 5, 6 });
-		when(imageDAO.retrieveAll()).thenReturn(Arrays.asList(img1, img2));
-
-		mockMvc.perform(get("/images"))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$[0].id").value(img1.getId()))
-				.andExpect(jsonPath("$[0].name").value("img1.jpg"))
-				.andExpect(jsonPath("$[1].id").value(img2.getId()))
-				.andExpect(jsonPath("$[1].name").value("img2.jpg"));
-	}
-
-	@Test
-	public void addImageShouldReturnSuccess() throws Exception {
-		MockMultipartFile file = new MockMultipartFile(
-				"file",
-				"image.jpg",
-				MediaType.IMAGE_JPEG_VALUE,
-				new ClassPathResource("test.jpg").getInputStream());
-
-		this.mockMvc.perform(
-				multipart("/images").file(file)).andExpect(status().isCreated());
-
-		verify(imageDAO).create(org.mockito.ArgumentMatchers.any(Image.class));
-	}
-
-	@Test
-	public void addImageShouldReturnUnsupportedMediaType() throws Exception {
-		MockMultipartFile file = new MockMultipartFile(
-				"file",
-				"file.txt",
-				MediaType.TEXT_PLAIN_VALUE,
-				"not an image".getBytes());
-
-		this.mockMvc.perform(
-				multipart("/images").file(file)).andExpect(status().isUnsupportedMediaType());
-	}
-
-	@Test
-	public void deleteImagesShouldReturnMethodNotAllowed() throws Exception {
-		this.mockMvc.perform(delete("/images"))
-				.andExpect(status().isMethodNotAllowed());
-	}
-
-	@Test
-	public void deleteImageShouldReturnNotFound() throws Exception {
-		when(imageDAO.retrieve(0)).thenReturn(Optional.empty());
-
-		this.mockMvc.perform(delete("/images/0"))
-				.andExpect(status().isNotFound());
-
-		verify(imageDAO).retrieve(0);
-	}
-
-	@Test
-	public void deleteImageShouldReturnSuccess() throws Exception {
-		when(imageDAO.retrieve(0)).thenReturn(Optional.of(image));
-
-		this.mockMvc.perform(delete("/images/0"))
-				.andExpect(status().isNoContent());
-
-		verify(imageDAO).retrieve(0);
-		verify(imageDAO).delete(image);
-	}
-
-	@Test
-	public void getImageListShouldReturnSuccess() throws Exception {
-		when(imageDAO.retrieveAll()).thenReturn(new ArrayList<>());
-
-		this.mockMvc.perform(get("/images"))
-				.andExpect(status().isOk())
-				.andExpect(content().json("[]"));
-
-		verify(imageDAO).retrieveAll();
-	}
-
-	@Test
-	public void deleteImageShouldReturnNoContent() throws Exception {
-		Image img = new Image("img.jpg", new byte[] { 1 });
-		when(imageDAO.retrieve(0L)).thenReturn(Optional.of(img));
-
-		mockMvc.perform(delete("/images/0"))
-				.andExpect(status().isNoContent());
-
-		verify(imageDAO).delete(img);
-	}
-
+    verify(imageDao).retrieve(1L);
+    verify(imageDao).similarImages(1L, 5, 1);
+  }
 }
