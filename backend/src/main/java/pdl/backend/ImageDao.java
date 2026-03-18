@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -145,7 +147,22 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
   @Override
   public void delete(Image image) {
+    System.out.println("ID: " + image.getId());
     jdbcTemplate.update("DELETE FROM images WHERE id = ?", image.getId());
+    // Supprimer le fichier réel sur le serveur (le disque dur)
+    try {
+        Path path = Paths.get("images/" + image.getName());
+        
+        boolean deleted = Files.deleteIfExists(path);
+        
+        if (deleted) {
+            System.out.println("Succès : Fichier " + image.getName() + " supprimé du disque.");
+        }
+    } catch (IOException e) {
+        // En cas de problème (par exemple fichier ouvert ailleurs.)
+        System.err.println("Erreur : Impossible de supprimer le fichier physique.");
+        e.printStackTrace();
+    }
   }
 
   public List<Map<String, Object>> similarImages(long id, int limit, int descriptorType) {
@@ -156,11 +173,11 @@ public class ImageDao implements Dao<Image>, InitializingBean {
 
     return jdbcTemplate.queryForList(
       "SELECT id, " +
-      column + " <-> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
+      column + " <=> (SELECT " + column + " FROM images WHERE id = ?) AS score " +
       "FROM images " +
       "WHERE id <> ? " +
       "AND " + column + " IS NOT NULL " +
-      "ORDER BY score " +
+      "ORDER BY score ASC " + 
       "LIMIT ?",
       id, id, limit
     );

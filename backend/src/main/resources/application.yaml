@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
   application:
     name: backend
   config:
@@ -7,7 +11,3 @@ spring:
     url: "jdbc:postgresql://${HOST_NAME}:5432/${DATABASE_NAME}"
     username: ${DATABASE_NAME}
     password: ${DATABASE_PASSWORD}
-  servlet:
-    multipart:
-      max-file-size: -1
-      max-request-size: -1

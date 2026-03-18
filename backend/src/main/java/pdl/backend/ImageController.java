@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class ImageController {
 
   @Autowired
@@ -132,6 +134,7 @@ public class ImageController {
     return new ResponseEntity<>(nodes, HttpStatus.OK);
   }
 
+
   @RequestMapping(value = "/images/{id}/metadata", method = RequestMethod.GET, produces = "application/json; charset=UTF-8")
   @ResponseBody
   public ResponseEntity<?> getImageMetadata(@PathVariable long id) {
@@ -194,4 +197,18 @@ public class ImageController {
     imageDao.deleteKeyword(id, tag);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
+ @RequestMapping(value = "/images/{id}/info", method = RequestMethod.GET, produces = "application/json")
+@ResponseBody
+public ResponseEntity<?> getImageInfo(@PathVariable long id) {
+    return imageDao.retrieve(id)
+        .map(img -> {
+            ObjectNode node = mapper.createObjectNode();
+            node.put("id", img.getId());
+            node.put("name", img.getName());
+            node.put("size", img.getData().length); 
+            return ResponseEntity.ok((com.fasterxml.jackson.databind.JsonNode) node);
+        })
+        .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  
+    }
 }
