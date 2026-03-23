@@ -5,7 +5,7 @@ initialisationS
 
 Projet universitaire de Licence 3 Informatique : application web client-serveur pour gérer et traiter des images.
 
-## 🎯 Objectif du projet
+##  Objectif du projet
 
 - Importer des images
 - Consulter les métadonnées (taille, type, mots-clés…)
@@ -13,7 +13,7 @@ Projet universitaire de Licence 3 Informatique : application web client-serveur 
 - Exposer une API REST pour le backend
 - Proposer une interface web moderne pour le frontend
 
-> ⚠️ Le projet n’est pas totalement terminé. Certaines fonctionnalités sont encore en cours d’implémentation ou d’amélioration.
+> Le projet n’est pas totalement terminé. Certaines fonctionnalités sont encore en cours d’implémentation ou d’amélioration.
 
 ##  Technologies utilisées
 
@@ -23,7 +23,7 @@ Projet universitaire de Licence 3 Informatique : application web client-serveur 
 - Tests : JUnit, Mockito
 - Outils : Git, Maven, Postman, VS Code
 
-## 🔍 Ce que j’ai réalisé dans le projet
+## Ce que j’ai réalisé dans le projet
 
 - Implémentation de plusieurs endpoints REST côté backend (contrôleurs, services…)
 - Mise en place d’une partie de la base de données (modèle de données, requêtes)
@@ -37,7 +37,7 @@ Projet universitaire de Licence 3 Informatique : application web client-serveur 
 - `frontend/` : application Vue.js / TypeScript (interface utilisateur)
 - `.gitlab-ci.yml` : configuration de l’intégration continue utilisée à l’université
 
-## 🚀 État d’avancement
+## État d’avancement
 
 - Backend : endpoints principaux implémentés, certains raffinements encore possibles
 - Frontend : pages principales et appels à l’API en place, interface à améliorer
